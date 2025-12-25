@@ -1,0 +1,7 @@
+{
+  "name": "Project Singularity: The Iron Rebellion",
+  "description": "An interactive cyberpunk coding game teaching Python concepts aligned with ICSE Class 10 curriculum. Help Cipher defeat KRONOS by writing real code.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
