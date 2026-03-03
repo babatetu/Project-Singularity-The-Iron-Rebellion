@@ -9,19 +9,19 @@ interface CodeVaultProps {
 
 export const CodeVault: React.FC<CodeVaultProps> = ({ unlockedLevel, onClose, onCopy }) => {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4" onClick={onClose}>
       <div className="w-full max-w-4xl h-[80vh] bg-cyber-dark border border-gray-700 shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
         
         {/* Header */}
-        <div className="p-6 border-b border-gray-700 flex justify-between items-center bg-black/50">
+        <div className="p-4 md:p-6 border-b border-gray-700 flex justify-between items-center bg-black/50">
            <div>
-             <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-               <span className="text-cyber-gold">📚</span> CIPHER'S CODE VAULT
+             <h2 className="text-lg md:text-2xl font-bold text-white flex items-center gap-2 md:gap-3">
+               <span className="text-cyber-gold">📚</span> <span className="truncate max-w-[150px] md:max-w-none">CODE VAULT</span>
              </h2>
-             <p className="text-xs text-gray-500 mt-1">Recovered Data Fragments</p>
+             <p className="text-[10px] md:text-xs text-gray-500 mt-1">Recovered Data Fragments</p>
            </div>
-           <button onClick={onClose} className="text-gray-500 hover:text-white px-4 py-2 border border-gray-700 hover:bg-gray-800">
-             CLOSE DATABASE
+           <button onClick={onClose} className="text-[10px] md:text-xs text-gray-500 hover:text-white px-3 md:px-4 py-1.5 md:py-2 border border-gray-700 hover:bg-gray-800 uppercase font-bold tracking-wider">
+             CLOSE
            </button>
         </div>
 

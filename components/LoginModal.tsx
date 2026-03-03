@@ -42,8 +42,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm" onClick={onClose}>
-      <div className="w-full max-w-md bg-cyber-dark border border-gray-700 shadow-[0_0_50px_rgba(0,0,0,0.8)] p-8 relative overflow-hidden" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4" onClick={onClose}>
+      <div className="w-full max-w-md bg-cyber-dark border border-gray-700 shadow-[0_0_50px_rgba(0,0,0,0.8)] p-6 md:p-8 relative overflow-hidden" onClick={e => e.stopPropagation()}>
         
         {/* Cyberpunk Accents */}
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyber-neon to-transparent"></div>

@@ -42,8 +42,8 @@ export const StoryOverlay: React.FC<StoryOverlayProps> = ({ segment, onNext, isL
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-      <div className={`w-full max-w-2xl bg-cyber-black border-2 p-6 shadow-2xl relative flex flex-col gap-4 ${getSpeakerColor(segment.speaker)}`}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+      <div className={`w-full max-w-2xl bg-cyber-black border-2 p-4 md:p-6 shadow-2xl relative flex flex-col gap-4 ${getSpeakerColor(segment.speaker)}`}>
         {/* Scanline Effect */}
         <div className="absolute inset-0 pointer-events-none opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiAvPgo8L3N2Zz4=')]"></div>
         
@@ -55,7 +55,7 @@ export const StoryOverlay: React.FC<StoryOverlayProps> = ({ segment, onNext, isL
             </div>
         </div>
 
-        <div className="min-h-[100px] text-lg font-mono leading-relaxed text-gray-200">
+        <div className="min-h-[100px] text-base md:text-lg font-mono leading-relaxed text-gray-200">
           <Typewriter 
             text={segment.text} 
             speed={25} 

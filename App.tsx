@@ -93,6 +93,10 @@ const App: React.FC = () => {
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [achievementsOpen, setAchievementsOpen] = useState(false);
   
+  // Mobile UI State
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'code' | 'visualizer' | 'console'>('code');
+  
   // Audio State
   const [muted, setMuted] = useState(false);
 
@@ -664,9 +668,15 @@ const App: React.FC = () => {
       )}
 
       {/* Sidebar */}
-      <div className="w-64 bg-cyber-dark/95 backdrop-blur-sm border-r border-cyber-slate flex flex-col justify-between hidden md:flex z-10 relative">
+      <div className={`fixed inset-y-0 left-0 w-64 bg-cyber-dark/95 backdrop-blur-md border-r border-cyber-slate flex flex-col justify-between z-40 transition-transform duration-300 md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="relative">
-          <div className="absolute top-0 right-0 w-2 h-2 bg-cyber-neon shadow-[0_0_10px_#00f3ff]"></div>
+          <button 
+            onClick={() => setIsSidebarOpen(false)}
+            className="absolute top-4 right-4 md:hidden text-gray-500 hover:text-white"
+          >
+            ✕
+          </button>
+          <div className="absolute top-0 right-0 w-2 h-2 bg-cyber-neon shadow-[0_0_10px_#00f3ff] hidden md:block"></div>
           <div className="p-6 border-b border-cyber-slate/50">
             <h1 className="text-xl font-bold text-white tracking-tighter italic">PROJECT <span className="text-cyber-neon text-glow">SINGULARITY</span></h1>
             <div className="text-xs text-gray-500 mt-1">v1.1.0 // IRON REBELLION</div>
@@ -834,34 +844,67 @@ const App: React.FC = () => {
         </div>
       </div>
 
+      {/* Sidebar Overlay for Mobile */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       <div className="flex-1 flex flex-col min-w-0 z-10 bg-black/80 backdrop-blur-sm relative">
-        <header className="h-16 bg-cyber-dark/80 border-b border-cyber-slate/50 flex items-center justify-between px-6 backdrop-blur-md sticky top-0 z-20">
-          <div>
-            <h2 className="text-lg font-bold text-white flex items-center gap-3 tracking-wide">
-                <span className={`w-2 h-2 bg-cyber-neon rounded-full shadow-[0_0_8px_#00f3ff] ${gameState.status === 'running' ? 'animate-pulse' : ''}`}></span>
-                <span className="text-glow">{currentLevel.title}</span>
-            </h2>
-            <p className="text-xs text-gray-500 font-mono mt-0.5 ml-5">{currentLevel.subTitle}</p>
+        <header className="h-16 bg-cyber-dark/80 border-b border-cyber-slate/50 flex items-center justify-between px-4 md:px-6 backdrop-blur-md sticky top-0 z-20">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setIsSidebarOpen(true)}
+              className="md:hidden p-2 text-cyber-neon hover:bg-cyber-neon/10 rounded transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+            <div>
+              <h2 className="text-base md:text-lg font-bold text-white flex items-center gap-2 md:gap-3 tracking-wide">
+                  <span className={`w-2 h-2 bg-cyber-neon rounded-full shadow-[0_0_8px_#00f3ff] ${gameState.status === 'running' ? 'animate-pulse' : ''}`}></span>
+                  <span className="text-glow truncate max-w-[150px] md:max-w-none">{currentLevel.title}</span>
+              </h2>
+              <p className="text-[10px] md:text-xs text-gray-500 font-mono mt-0.5 ml-4 md:ml-5 truncate max-w-[150px] md:max-w-none">{currentLevel.subTitle}</p>
+            </div>
           </div>
-          <div className="flex items-center gap-4">
-              <div className="px-3 py-1 border border-gray-700 rounded bg-black/50 text-xs text-gray-400 font-mono">
-                  DIFFICULTY: <span className="text-white uppercase font-bold">{gameState.skillLevel}</span>
+          <div className="flex items-center gap-2 md:gap-4">
+              <div className="px-2 md:px-3 py-1 border border-gray-700 rounded bg-black/50 text-[10px] md:text-xs text-gray-400 font-mono">
+                  <span className="hidden sm:inline">DIFFICULTY: </span><span className="text-white uppercase font-bold">{gameState.skillLevel}</span>
               </div>
           </div>
         </header>
 
-        <div className="flex-1 flex flex-col md:flex-row min-h-0">
-          <div className="flex-1 flex flex-col min-w-0 border-r border-cyber-slate/50 relative">
-            <div className="p-4 bg-cyber-dark/50 border-b border-cyber-slate/50">
-                <p className="text-sm text-gray-300 leading-relaxed font-sans">{currentLevel.description}</p>
-                <div className="mt-3 text-xs text-cyber-neon bg-cyber-neon/5 p-3 rounded-r-lg border-l-2 border-cyber-neon relative overflow-hidden">
+        {/* Mobile Tab Navigation */}
+        <div className="md:hidden flex border-b border-cyber-slate/30 bg-cyber-dark/50">
+          {(['code', 'visualizer', 'console'] as const).map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`flex-1 py-3 text-[10px] uppercase font-bold tracking-widest transition-all ${
+                activeTab === tab 
+                  ? 'text-cyber-neon border-b-2 border-cyber-neon bg-cyber-neon/5' 
+                  : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-y-auto md:overflow-hidden">
+          <div className={`flex-1 flex flex-col min-w-0 border-r border-cyber-slate/50 relative ${activeTab !== 'code' && activeTab !== 'console' ? 'hidden md:flex' : 'flex'}`}>
+            <div className={`p-4 bg-cyber-dark/50 border-b border-cyber-slate/50 ${activeTab === 'console' ? 'hidden md:block' : 'block'}`}>
+                <p className="text-xs md:text-sm text-gray-300 leading-relaxed font-sans">{currentLevel.description}</p>
+                <div className="mt-3 text-[10px] md:text-xs text-cyber-neon bg-cyber-neon/5 p-2 md:p-3 rounded-r-lg border-l-2 border-cyber-neon relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-1 opacity-20">🎯</div>
                     <span className="font-bold tracking-wider mr-2">MISSION OBJECTIVE:</span> 
                     <span className="text-gray-300">{currentLevel.objective}</span>
                 </div>
             </div>
 
-            <div className="flex-1 min-h-[300px] flex flex-col">
+            <div className={`flex-1 min-h-[300px] md:min-h-0 flex flex-col ${activeTab === 'console' ? 'hidden md:flex' : 'flex'}`}>
                 <CodeEditor 
                     code={gameState.code} 
                     onChange={(val) => {
@@ -873,14 +916,14 @@ const App: React.FC = () => {
                 />
             </div>
 
-            <div className="h-14 bg-cyber-black border-y border-cyber-slate/50 flex items-center justify-end px-4 gap-3 bg-black/50">
+            <div className={`h-14 bg-cyber-black border-y border-cyber-slate/50 flex items-center justify-end px-4 gap-3 bg-black/50 ${activeTab === 'console' ? 'hidden md:flex' : 'flex'}`}>
                 <button 
                     onClick={handleResetCode}
                     disabled={gameState.tutorialPhase === 'IDO'}
                     title="Ctrl + Shift + R"
-                    className="px-4 py-1 text-xs text-gray-500 hover:text-white transition-colors disabled:opacity-30 uppercase tracking-wider font-bold"
+                    className="px-2 md:px-4 py-1 text-[10px] md:text-xs text-gray-500 hover:text-white transition-colors disabled:opacity-30 uppercase tracking-wider font-bold"
                 >
-                    Reset Code
+                    Reset
                 </button>
                 <button 
                     onClick={() => handleRunCode(false)}
@@ -888,19 +931,19 @@ const App: React.FC = () => {
                     id="run-button"
                     title="Ctrl + R"
                     onMouseEnter={() => SFX.hover()}
-                    className={`px-6 py-2 bg-cyber-neon text-black font-bold font-mono text-sm uppercase tracking-wider hover:bg-white hover:shadow-[0_0_20px_#00f3ff] transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-transparent`}
+                    className={`px-4 md:px-6 py-1.5 md:py-2 bg-cyber-neon text-black font-bold font-mono text-xs md:text-sm uppercase tracking-wider hover:bg-white hover:shadow-[0_0_20px_#00f3ff] transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-transparent`}
                 >
                     {gameState.status === 'running' ? 'EXECUTING...' : 'RUN SCRIPT_'}
                 </button>
             </div>
 
-            <div className="h-48 border-t border-cyber-slate/30 bg-black/90">
+            <div className={`h-48 border-t border-cyber-slate/30 bg-black/90 ${activeTab === 'code' ? 'hidden md:block' : 'block'}`}>
                 <Console logs={gameState.logs} />
             </div>
           </div>
 
-          <div className="w-full md:w-[400px] bg-black/40 flex flex-col border-l border-cyber-slate/30">
-              <div className="flex-1 relative flex flex-col">
+          <div className={`w-full md:w-[400px] bg-black/40 flex flex-col border-l border-cyber-slate/30 ${activeTab !== 'visualizer' ? 'hidden md:flex' : 'flex'}`}>
+              <div className="flex-1 relative flex flex-col min-h-[300px] md:min-h-0">
                   <div className="absolute top-2 right-2 z-10 px-2 py-1 bg-black/80 border border-gray-800 text-[9px] text-gray-500 uppercase tracking-widest font-bold rounded">
                       Holographic Projection
                   </div>

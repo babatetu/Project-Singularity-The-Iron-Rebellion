@@ -15,24 +15,24 @@ export const AchievementModal: React.FC<AchievementModalProps> = ({ unlockedIds,
   const progress = (unlockedCount / totalCount) * 100;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4" onClick={onClose}>
       <div className="w-full max-w-4xl h-[80vh] bg-cyber-dark border border-cyber-gold/50 shadow-[0_0_50px_rgba(255,215,0,0.1)] flex flex-col" onClick={e => e.stopPropagation()}>
         
         {/* Header */}
-        <div className="p-6 border-b border-gray-700 flex justify-between items-center bg-black/50">
+        <div className="p-4 md:p-6 border-b border-gray-700 flex justify-between items-center bg-black/50">
            <div>
-             <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-               <span className="text-cyber-gold">🏆</span> HALL OF RECORDS
+             <h2 className="text-lg md:text-2xl font-bold text-white flex items-center gap-2 md:gap-3">
+               <span className="text-cyber-gold">🏆</span> <span className="truncate max-w-[150px] md:max-w-none">HALL OF RECORDS</span>
              </h2>
-             <div className="flex items-center gap-4 mt-2">
-                 <p className="text-xs text-gray-500">Pilot Achievements</p>
-                 <div className="w-32 h-1.5 bg-gray-800 rounded-full overflow-hidden">
+             <div className="flex items-center gap-2 md:gap-4 mt-2">
+                 <p className="text-[10px] md:text-xs text-gray-500">Pilot Achievements</p>
+                 <div className="w-20 md:w-32 h-1 md:h-1.5 bg-gray-800 rounded-full overflow-hidden">
                      <div className="h-full bg-cyber-gold" style={{ width: `${progress}%` }}></div>
                  </div>
-                 <span className="text-xs text-cyber-gold font-mono">{unlockedCount} / {totalCount}</span>
+                 <span className="text-[10px] md:text-xs text-cyber-gold font-mono">{unlockedCount} / {totalCount}</span>
              </div>
            </div>
-           <button onClick={onClose} className="text-gray-500 hover:text-white px-4 py-2 border border-gray-700 hover:bg-gray-800">
+           <button onClick={onClose} className="text-[10px] md:text-xs text-gray-500 hover:text-white px-3 md:px-4 py-1.5 md:py-2 border border-gray-700 hover:bg-gray-800 uppercase font-bold tracking-wider">
              CLOSE
            </button>
         </div>

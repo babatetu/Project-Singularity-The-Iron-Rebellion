@@ -414,7 +414,7 @@ export const AIChatTerminal: React.FC<AIChatTerminalProps> = ({ onClose }) => {
   };
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 w-[500px] h-[650px] bg-cyber-black border-2 border-cyber-neon shadow-[0_0_40px_rgba(0,243,255,0.15)] flex flex-col font-mono animate-slideIn rounded-lg overflow-hidden">
+    <div className="fixed inset-x-0 bottom-0 md:bottom-4 md:right-4 z-50 w-full md:w-[500px] h-[70vh] md:h-[650px] bg-cyber-black border-t-2 md:border-2 border-cyber-neon shadow-[0_0_40px_rgba(0,243,255,0.15)] flex flex-col font-mono animate-slideIn md:rounded-lg overflow-hidden">
       
       {/* Header */}
       <div className="bg-cyber-dark p-4 border-b border-cyber-slate flex justify-between items-center bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjMWExYTFhIiAvPgo8L3N2Zz4=')]">

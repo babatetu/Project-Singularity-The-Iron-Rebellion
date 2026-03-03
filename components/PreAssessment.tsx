@@ -32,8 +32,8 @@ export const PreAssessment: React.FC<PreAssessmentProps> = ({ onComplete }) => {
   const currentQ = ASSESSMENT_QUESTIONS[step];
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-md">
-      <div className="w-full max-w-lg bg-cyber-dark border-2 border-cyber-neon p-8 relative shadow-[0_0_30px_rgba(0,243,255,0.2)]">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-md p-4">
+      <div className="w-full max-w-lg bg-cyber-dark border-2 border-cyber-neon p-4 md:p-8 relative shadow-[0_0_30px_rgba(0,243,255,0.2)]">
         
         {/* Header */}
         <div className="flex items-center gap-4 mb-6 border-b border-gray-700 pb-4">
