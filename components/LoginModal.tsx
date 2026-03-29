@@ -22,17 +22,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLogin, onClose }) => {
       // Fallback/Simulation for demo purposes if firebase isn't set up by the user
       if (e.message.includes("Firebase not configured")) {
          setError("SYSTEM ERROR: Firebase Config Missing. (Check services/firebase.ts)");
-         
-         // Optional: Still let them in as 'Guest' after a delay for UX testing
-         setTimeout(() => {
-             const mockUser: UserProfile = {
-                id: 'sim_user_99',
-                name: 'Pilot Sim',
-                email: 'sim@localhost',
-                avatarUrl: ''
-             };
-             onLogin(mockUser);
-         }, 2000);
       } else {
          setError("CONNECTION FAILED: " + e.message);
       }

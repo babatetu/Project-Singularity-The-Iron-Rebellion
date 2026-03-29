@@ -19,6 +19,7 @@ export interface LevelConfig {
   title: string;
   subTitle: string;
   description: string;
+  detailedDescription?: string;
   objective: string;
   initialCode: string; // Default (Intermediate)
   initialCodeEasy?: string; // More scaffolding

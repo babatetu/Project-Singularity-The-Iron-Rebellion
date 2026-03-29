@@ -5,7 +5,7 @@ import { LEVELS } from './data/levels';
 import { HINTS_DATABASE, CODE_VAULT } from './data/tutorialData';
 import { ACHIEVEMENTS } from './data/achievements';
 import { executeCode } from './services/mockPython';
-import { saveGameState, loadGameState, logoutUser } from './services/firebase';
+import { saveGameState, loadGameState, logoutUser, subscribeToGameState, subscribeToAuthChanges } from './services/firebase';
 import { CodeEditor } from './components/CodeEditor';
 import { Console } from './components/Console';
 import { Visualizer } from './components/Visualizer';
@@ -175,53 +175,155 @@ const App: React.FC = () => {
      if (gameState.maxReachedLevel >= 41) checkAndUnlockAchievement('savior');
   }, [gameState.currentLevelId, gameState.maxReachedLevel]);
 
+  useEffect(() => {
+    const unsubscribe = subscribeToAuthChanges(async (user) => {
+      if (user) {
+        setGameState(prev => {
+           if (prev.user?.id !== user.id) {
+               return { 
+                   ...prev, 
+                   user,
+                   logs: [...prev.logs, {
+                       id: `auth-${Date.now()}`,
+                       type: MessageType.SUCCESS,
+                       content: `NEURAL LINK ESTABLISHED: ${user.email}`,
+                       timestamp: new Date().toLocaleTimeString()
+                   }, {
+                       id: `sync-${Date.now()}`,
+                       type: MessageType.SYSTEM,
+                       content: "SYNCING WITH GLOBAL DEFENSE GRID (CLOUD)...",
+                       timestamp: new Date().toLocaleTimeString()
+                   }]
+               };
+           }
+           return prev;
+        });
+        
+        try {
+            const cloudState = await loadGameState(user.id);
+            let currentState: GameState | null = null;
+            let restored = false;
+            
+            setGameState(prev => {
+                currentState = prev;
+                if (cloudState) {
+                    const cloudMax = cloudState.maxReachedLevel || 1;
+                    const localMax = prev.maxReachedLevel;
+                    const cloudXP = cloudState.xp || 0;
+                    const localXP = prev.xp;
+                    
+                    if (cloudMax > localMax || (cloudMax === localMax && cloudXP > localXP)) {
+                        restored = true;
+                        const newState = {
+                            ...prev,
+                            currentLevelId: cloudState.currentLevelId || prev.currentLevelId,
+                            maxReachedLevel: cloudMax,
+                            xp: cloudXP,
+                            skillLevel: cloudState.skillLevel || prev.skillLevel,
+                            hintsUsed: cloudState.hintsUsed || prev.hintsUsed,
+                            assessmentComplete: cloudState.assessmentComplete ?? prev.assessmentComplete,
+                            unlockedAchievements: cloudState.unlockedAchievements || prev.unlockedAchievements,
+                            logs: [...prev.logs, {
+                                id: `cloud-restore-${Date.now()}`,
+                                type: MessageType.SUCCESS,
+                                content: `DATA RESTORED FROM CLOUD. SECTOR ${cloudMax} UNLOCKED.`,
+                                timestamp: new Date().toLocaleTimeString()
+                            }]
+                        };
+                        currentState = newState;
+                        return newState;
+                    }
+                }
+                return prev;
+            });
+            
+            if (currentState) {
+                if (cloudState) {
+                    const cloudMax = cloudState.maxReachedLevel || 1;
+                    const localMax = (currentState as GameState).maxReachedLevel;
+                    const cloudXP = cloudState.xp || 0;
+                    const localXP = (currentState as GameState).xp;
+                    
+                    if (localMax > cloudMax || (localMax === cloudMax && localXP > cloudXP)) {
+                        saveGameState(user, currentState).catch(console.error);
+                        setGameState(prev => ({
+                            ...prev,
+                            logs: [...prev.logs, {
+                                id: `cloud-update-${Date.now()}`,
+                                type: MessageType.SUCCESS,
+                                content: "CLOUD RECORD UPDATED.",
+                                timestamp: new Date().toLocaleTimeString()
+                            }]
+                        }));
+                    } else if (localMax === cloudMax && localXP === cloudXP && !restored) {
+                        setGameState(prev => ({
+                            ...prev,
+                            logs: [...prev.logs, {
+                                id: `cloud-sync-${Date.now()}`,
+                                type: MessageType.SUCCESS,
+                                content: "CLOUD SYNC COMPLETE.",
+                                timestamp: new Date().toLocaleTimeString()
+                            }]
+                        }));
+                    }
+                } else {
+                    saveGameState(user, currentState).catch(console.error);
+                    setGameState(prev => ({
+                        ...prev,
+                        logs: [...prev.logs, {
+                            id: `cloud-new-${Date.now()}`,
+                            type: MessageType.SUCCESS,
+                            content: "NEW PILOT RECORD CREATED IN CLOUD.",
+                            timestamp: new Date().toLocaleTimeString()
+                        }]
+                    }));
+                }
+            }
+        } catch (e) {
+            console.error("Failed to load cloud state on auth change", e);
+        }
+      } else {
+        setGameState(prev => ({ ...prev, user: null }));
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!gameState.user) return;
+    
+    const unsubscribe = subscribeToGameState(gameState.user.id, (cloudState) => {
+        setGameState(prev => {
+            // Only update if cloud state is newer or has higher progress
+            const cloudMax = cloudState.maxReachedLevel || 1;
+            const localMax = prev.maxReachedLevel;
+            const cloudXP = cloudState.xp || 0;
+            const localXP = prev.xp;
+            
+            if (cloudMax > localMax || (cloudMax === localMax && cloudXP > localXP)) {
+                return {
+                    ...prev,
+                    currentLevelId: cloudState.currentLevelId || prev.currentLevelId,
+                    maxReachedLevel: cloudMax,
+                    xp: cloudXP,
+                    skillLevel: cloudState.skillLevel || prev.skillLevel,
+                    hintsUsed: cloudState.hintsUsed || prev.hintsUsed,
+                    assessmentComplete: cloudState.assessmentComplete ?? prev.assessmentComplete,
+                    unlockedAchievements: cloudState.unlockedAchievements || prev.unlockedAchievements,
+                };
+            }
+            return prev;
+        });
+    });
+
+    return () => unsubscribe();
+  }, [gameState.user]);
+
   // --- SAVE & AUTH SYSTEM ---
 
   const handleLogin = async (user: UserProfile) => {
-    setGameState(prev => ({ ...prev, user }));
     setLoginModalOpen(false);
     SFX.success();
-    addLog(MessageType.SUCCESS, `NEURAL LINK ESTABLISHED: ${user.email}`);
-    
-    addLog(MessageType.SYSTEM, "SYNCING WITH GLOBAL DEFENSE GRID (CLOUD)...");
-    
-    try {
-        const cloudState = await loadGameState(user.id);
-        
-        if (cloudState) {
-            const cloudMax = cloudState.maxReachedLevel || 1;
-            const localMax = gameState.maxReachedLevel;
-
-            if (cloudMax > localMax) {
-                setGameState(prev => ({
-                    ...prev,
-                    currentLevelId: cloudState.currentLevelId || 1,
-                    maxReachedLevel: cloudMax,
-                    xp: cloudState.xp || 0,
-                    skillLevel: cloudState.skillLevel || 'beginner',
-                    code: cloudState.code || prev.code,
-                    hintsUsed: cloudState.hintsUsed || 0,
-                    assessmentComplete: true,
-                    unlockedAchievements: cloudState.unlockedAchievements || prev.unlockedAchievements,
-                    user: user,
-                    logs: [...prev.logs, {
-                        id: 'cloud-restore',
-                        type: MessageType.SUCCESS,
-                        content: `DATA RESTORED FROM CLOUD. SECTOR ${cloudMax} UNLOCKED.`,
-                        timestamp: new Date().toLocaleTimeString()
-                    }]
-                }));
-            } else {
-                await saveProgress(false, user);
-                addLog(MessageType.SUCCESS, "CLOUD RECORD UPDATED.");
-            }
-        } else {
-            await saveProgress(false, user);
-            addLog(MessageType.SUCCESS, "NEW PILOT RECORD CREATED IN CLOUD.");
-        }
-    } catch (e) {
-        addLog(MessageType.ERROR, "CLOUD SYNC FAILED. USING LOCAL CACHE.");
-    }
   };
 
   const handleLogout = async () => {
@@ -259,12 +361,19 @@ const App: React.FC = () => {
 
     if (currentUser) {
         if (manual) addLog(MessageType.SYSTEM, "UPLOADING TO CLOUD...");
-        const success = await saveGameState(currentUser, dataToSave);
-        if (manual) {
-            if (success) {
-                SFX.success();
-                addLog(MessageType.SUCCESS, "CLOUD SYNC VERIFIED.");
-            } else {
+        try {
+            const success = await saveGameState(currentUser, dataToSave);
+            if (manual) {
+                if (success) {
+                    SFX.success();
+                    addLog(MessageType.SUCCESS, "CLOUD SYNC VERIFIED.");
+                } else {
+                    SFX.error();
+                    addLog(MessageType.ERROR, "CLOUD UPLOAD FAILED.");
+                }
+            }
+        } catch (e) {
+            if (manual) {
                 SFX.error();
                 addLog(MessageType.ERROR, "CLOUD UPLOAD FAILED.");
             }
@@ -284,7 +393,7 @@ const App: React.FC = () => {
     if (gameState.currentLevelId > 1 || gameState.xp > 0 || gameState.unlockedAchievements.length > 0) {
       saveProgress(false);
     }
-  }, [gameState.currentLevelId, gameState.xp, gameState.skillLevel, gameState.user, gameState.maxReachedLevel, gameState.unlockedAchievements]);
+  }, [gameState.currentLevelId, gameState.xp, gameState.skillLevel, gameState.maxReachedLevel, gameState.unlockedAchievements]);
 
 
   // --- TUTORIAL ENGINE ---
@@ -378,7 +487,7 @@ const App: React.FC = () => {
                ...prev,
                tutorialPhase: 'WEDO',
                code: '', 
-               logs: [...prev.logs, { id: 'sys-prompt', type: MessageType.SYSTEM, content: "A.D.A.M.: Now you try. Type: print(\"POWER_CORE_ONLINE\")", timestamp: ""}]
+               logs: [...prev.logs, { id: 'sys-prompt', type: MessageType.SYSTEM, content: "A.D.A.M.: Now you try. Type: print(\"SYSTEM_ONLINE\")", timestamp: ""}]
              }));
           }, 2000);
         }, 500);
@@ -472,10 +581,10 @@ const App: React.FC = () => {
     setTimeout(() => {
       if (gameState.tutorialPhase === 'WEDO' && !isSimulation) {
          const normalized = gameState.code.replace(/\s/g, '').replace(/'/g, '"');
-         if (normalized.includes('print("POWER_CORE_ONLINE")')) {
+         if (normalized.includes('print("SYSTEM_ONLINE")')) {
              setGameState(prev => ({ ...prev, tutorialPhase: 'YOUDO', code: '' }));
              addLog(MessageType.SUCCESS, "A.D.A.M.: Excellent syntax. Now apply it to the mission objective.");
-             addLog(MessageType.SYSTEM, "MISSION UPDATE: Print \"SYSTEM ONLINE\" to finish.");
+             addLog(MessageType.SYSTEM, "MISSION UPDATE: Print \"SYSTEM_ONLINE\" to finish.");
              setGameState(prev => ({...prev, status: 'idle'}));
              SFX.success();
              return;
@@ -707,15 +816,18 @@ const App: React.FC = () => {
                     </button>
                 </div>
             ) : (
-                <div className="flex items-center gap-3 mb-4 p-2 border border-transparent hover:border-gray-700 rounded transition-all">
-                    <div className="w-10 h-10 rounded-full bg-cyber-slate border border-gray-600 flex items-center justify-center font-mono font-bold text-cyber-neon shadow-[0_0_5px_rgba(0,243,255,0.3)]">
+                <button 
+                    onClick={() => { SFX.click(); setLoginModalOpen(true); }}
+                    className="w-full text-left flex items-center gap-3 mb-4 p-2 border border-transparent hover:border-cyber-neon/50 hover:bg-cyber-neon/10 rounded transition-all group cursor-pointer"
+                >
+                    <div className="w-10 h-10 rounded-full bg-cyber-slate border border-gray-600 group-hover:border-cyber-neon flex items-center justify-center font-mono font-bold text-cyber-neon shadow-[0_0_5px_rgba(0,243,255,0.3)] transition-colors">
                     {gameState.skillLevel.charAt(0).toUpperCase()}
                     </div>
                     <div>
-                        <div className="font-bold text-gray-300">Guest Pilot</div>
-                        <div className="text-xs text-gray-500">Unregistered Link</div>
+                        <div className="font-bold text-gray-300 group-hover:text-white transition-colors">Guest Pilot</div>
+                        <div className="text-xs text-gray-500 group-hover:text-cyber-neon transition-colors">Unregistered Link (Click to Login)</div>
                     </div>
-                </div>
+                </button>
             )}
 
             {/* Difficulty Selector */}
@@ -732,6 +844,11 @@ const App: React.FC = () => {
                          {skill === 'beginner' ? 'Easy' : skill === 'intermediate' ? 'Med' : 'Hard'}
                        </button>
                    ))}
+                </div>
+                <div className="text-[9px] text-gray-500 mt-1 mb-1">
+                    {gameState.skillLevel === 'beginner' && "EASY: x0.8 XP - Relaxed challenges, extra hints"}
+                    {gameState.skillLevel === 'intermediate' && "MED: x1.0 XP - Standard difficulty"}
+                    {gameState.skillLevel === 'advanced' && "HARD: x2.0 XP - Intense challenges, minimal guidance"}
                 </div>
                 <div className="text-[9px] text-gray-500 mt-1 flex justify-between">
                     <span>Reward Factor:</span>
@@ -938,7 +1055,11 @@ const App: React.FC = () => {
             </div>
 
             <div className={`h-48 border-t border-cyber-slate/30 bg-black/90 ${activeTab === 'code' ? 'hidden md:block' : 'block'}`}>
-                <Console logs={gameState.logs} />
+                <Console 
+                    logs={gameState.logs} 
+                    isExecuting={gameState.status === 'running'}
+                    onClear={() => setGameState(prev => ({ ...prev, logs: [] }))}
+                />
             </div>
           </div>
 

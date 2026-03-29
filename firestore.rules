@@ -1,0 +1,67 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: pilots
+    // Document ID: {userId}
+    // Fields:
+    //   - currentLevelId: number (required)
+    //   - maxReachedLevel: number (required)
+    //   - xp: number (required)
+    //   - skillLevel: string (required, enum: 'beginner', 'intermediate', 'advanced')
+    //   - assessmentComplete: bool (required)
+    //   - code: string (optional)
+    //   - hintsUsed: number (optional)
+    //   - tutorialPhase: string (optional)
+    //   - unlockedAchievements: list (optional)
+    //   - lastUpdated: string (optional)
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function hasRequiredFields(data) {
+      return data.keys().hasAll([
+        'currentLevelId', 'maxReachedLevel', 'xp', 'skillLevel', 'assessmentComplete'
+      ]);
+    }
+
+    function isValidPilotData(data) {
+      return data.keys().hasOnly([
+        'currentLevelId', 'maxReachedLevel', 'xp', 'skillLevel', 
+        'code', 'hintsUsed', 'assessmentComplete', 'tutorialPhase', 
+        'unlockedAchievements', 'lastUpdated'
+      ]) &&
+      hasRequiredFields(data) &&
+      data.currentLevelId is number &&
+      data.maxReachedLevel is number &&
+      data.xp is number &&
+      data.skillLevel is string &&
+      data.skillLevel in ['beginner', 'intermediate', 'advanced'] &&
+      data.assessmentComplete is bool &&
+      (!('code' in data) || data.code is string) &&
+      (!('hintsUsed' in data) || data.hintsUsed is number) &&
+      (!('tutorialPhase' in data) || data.tutorialPhase is string) &&
+      (!('unlockedAchievements' in data) || data.unlockedAchievements is list) &&
+      (!('lastUpdated' in data) || data.lastUpdated is string);
+    }
+
+    match /pilots/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidPilotData(request.resource.data);
+      allow update: if isOwner(userId) && isValidPilotData(request.resource.data);
+      allow delete: if false;
+    }
+  }
+}

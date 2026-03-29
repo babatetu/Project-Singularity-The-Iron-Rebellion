@@ -3,9 +3,11 @@ import { LogEntry, MessageType } from '../types';
 
 interface ConsoleProps {
   logs: LogEntry[];
+  onClear?: () => void;
+  isExecuting?: boolean;
 }
 
-export const Console: React.FC<ConsoleProps> = ({ logs }) => {
+export const Console: React.FC<ConsoleProps> = ({ logs, onClear, isExecuting }) => {
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -24,8 +26,18 @@ export const Console: React.FC<ConsoleProps> = ({ logs }) => {
 
   return (
     <div className="w-full h-full bg-[#050505] font-mono text-xs p-4 overflow-y-auto custom-scrollbar shadow-inner relative">
-      <div className="absolute top-0 right-0 px-2 py-1 text-[9px] text-gray-700 font-bold uppercase tracking-widest select-none">
-        Terminal Output
+      <div className="absolute top-0 right-0 px-2 py-1 flex items-center gap-4 z-10">
+        {onClear && (
+          <button 
+            onClick={onClear}
+            className="text-[9px] text-gray-600 hover:text-red-500 font-bold uppercase tracking-widest transition-colors"
+          >
+            [Clear Console]
+          </button>
+        )}
+        <div className="text-[9px] text-gray-700 font-bold uppercase tracking-widest select-none">
+          Terminal Output
+        </div>
       </div>
       <div className="text-cyber-green/50 mb-2 select-none border-b border-gray-800 pb-1 w-full flex justify-between">
           <span>root@cipher-terminal:~/protocol$ _</span>
@@ -37,6 +49,12 @@ export const Console: React.FC<ConsoleProps> = ({ logs }) => {
           <span>{log.type === MessageType.ERROR ? '>> ERROR: ' : log.type === MessageType.SUCCESS ? '>> ' : ''}{log.content}</span>
         </div>
       ))}
+      {isExecuting && (
+        <div className="flex items-center gap-2 text-cyber-neon font-bold animate-pulse mb-2">
+          <span className="text-[10px] opacity-30">[{new Date().toLocaleTimeString()}]</span>
+          <span>{">>"} EXECUTING_</span>
+        </div>
+      )}
       <div ref={endRef} className="h-4" />
     </div>
   );

@@ -6,7 +6,8 @@ export const LEVELS: LevelConfig[] = [
     title: "Level 1: System Boot",
     subTitle: "Sector Alpha - Perimeter Defense",
     description: "The Global Defense Grid is offline. You need to manually override the power relay to bring A.D.A.M. online. Use the `print()` function to send the signal.",
-    objective: "Print the exact string \"SYSTEM ONLINE\" to initialize the boot sequence.",
+    detailedDescription: "System Boot - Initialize the core system by outputting the correct startup signal. This is your first step into the rebellion. Precision is key.",
+    objective: "Print the exact string \"SYSTEM_ONLINE\" to initialize the boot sequence.",
     initialCode: `# Initialize the boot sequence\n# Use print() to send the signal\n\n`,
     initialCodeEasy: `# Use print() to send the signal\nprint("______ ______")\n`,
     initialCodeHard: ``,
@@ -22,13 +23,17 @@ export const LEVELS: LevelConfig[] = [
       if (!cleanCode.includes('print(')) return { success: false, message: "NameError: command not found. Did you use print()?" };
       const match = cleanCode.match(/print\(\s*"([^"]+)"\s*\)/);
       if (!match) return { success: false, message: "SyntaxError: Invalid syntax. Usage: print(\"Message\")" };
-      if (match[1] === "SYSTEM ONLINE") return { success: true, message: "Boot Sequence Initiated...", output: "SYSTEM ONLINE" };
-      return { success: false, message: `Output Mismatch. Expected "SYSTEM ONLINE", got "${match[1]}"`, output: match[1] };
+      if (match[1] === "SYSTEM_ONLINE") return { success: true, message: "Boot Sequence Initiated...", output: "SYSTEM_ONLINE" };
+      return { success: false, message: `Output Mismatch. Expected "SYSTEM_ONLINE", got "${match[1]}"`, output: match[1] };
     },
     storyStart: [
       { speaker: 'System', text: "DETECTING UNAUTHORIZED BIO-SIGNATURE..." },
       { speaker: 'Cipher', text: "Okay, Maya. Dr. Chen said the relay is here. Just... don't think about the drones.", mood: 'fear' },
-      { speaker: 'A.D.A.M.', text: "Hello, Maya. It's been 847 days. Are you ready to take the first step?", mood: 'neutral' }
+      { speaker: 'A.D.A.M.', text: "Hello, Maya. It's been 847 days. Are you ready to take the first step?", mood: 'neutral' },
+      { speaker: 'A.D.A.M.', text: "I've established a neural link to your terminal. You'll need to write Python scripts to bypass the security layers.", mood: 'neutral' },
+      { speaker: 'A.D.A.M.', text: "Look at the Code Editor in the center. That's where you'll type your commands. The 'RUN SCRIPT' button will execute them.", mood: 'neutral' },
+      { speaker: 'A.D.A.M.', text: "If you get stuck, I'll provide hints. The 'Request Neural Hint' button is your lifeline.", mood: 'neutral' },
+      { speaker: 'A.D.A.M.', text: "Our first mission is simple: Wake up the relay system. You'll need to print the command 'SYSTEM_ONLINE' to the console.", mood: 'neutral' }
     ],
     storyEnd: [
       { speaker: 'System', text: "BOOT SEQUENCE SUCCESSFUL. POWER RESTORED." },
@@ -40,6 +45,7 @@ export const LEVELS: LevelConfig[] = [
     title: "Level 2: Data Calibration",
     subTitle: "Sector Alpha - Drone Hangar",
     description: "A KRONOS security drone is blocking the path. It's checking its internal energy sensors. We need to trick it by assigning the correct values to its variables.",
+    detailedDescription: "Data Calibration - Manipulate the drone's internal state by assigning the correct values to its variables. This is basic data handling.",
     objective: "Create a variable named 'energy' and assign it the integer value 100. Then print the variable.",
     initialCode: `# Create a variable named 'energy'\n# Assign it the value 100\n# Print the variable\n\n`,
     initialCodeEasy: `energy = ___\nprint(______)`,
@@ -71,6 +77,7 @@ export const LEVELS: LevelConfig[] = [
     title: "Level 3: Arithmetic Core",
     subTitle: "Sector Alpha - Factory District",
     description: "The door is sealed with a trajectory lock. Calculate the correct angle of entry using basic operators.",
+    detailedDescription: "Arithmetic Core - Use Python's mathematical operators to calculate the precise entry angle for the factory seal.",
     objective: "Calculate the result of 50 multiplied by 2, minus 10. Print the result directly.",
     initialCode: `# Calculate 50 * 2 - 10\n# Print the result\n\n`,
     initialCodeEasy: `result = 50 * _ - 10\nprint(______)\n`,
@@ -108,6 +115,7 @@ export const LEVELS: LevelConfig[] = [
     title: "Level 4: The Firewall Key",
     subTitle: "Sector Beta - Data Stream",
     description: "The firewall requires a composite passkey. Concatenate two strings to unlock the gate.",
+    detailedDescription: "The Firewall Key - Reconstruct the security passkey by joining string fragments together. String concatenation is essential for data reconstruction.",
     objective: "Create variables: part1 = \"ACCESS\" and part2 = \"_GRANTED\". Create 'full_key' adding them together. Print 'full_key'.",
     initialCode: `part1 = "ACCESS"\npart2 = "_GRANTED"\n\n# Combine into full_key\n\n# Print full_key\n`,
     hint: "Use the + operator to join strings.",
@@ -136,6 +144,7 @@ export const LEVELS: LevelConfig[] = [
     title: "Level 5: Gatekeeper Logic",
     subTitle: "Sector Beta - Central Hub",
     description: "A security checkpoint validates user status. Inject a conditional check to force the gate open.",
+    detailedDescription: "Gatekeeper Logic - Bypass the security checkpoint by injecting a conditional check that validates your status as an administrator.",
     objective: "Set variable `status` to \"admin\". Write an `if` statement checking if `status` equals \"admin\". Inside, print \"OPEN\".",
     initialCode: `# Set status\n\n# Write if statement\n# Print "OPEN"\n`,
     hint: "if status == \"admin\":\n    print(\"OPEN\")",
@@ -170,6 +179,7 @@ export const LEVELS: LevelConfig[] = [
     title: "Level 6: Power Surge",
     subTitle: "Sector Gamma - Mainframe Core",
     description: "To disable KRONOS's primary link, overload the 5 server nodes simultaneously.",
+    detailedDescription: "Power Surge - Overload the mainframe core by sending simultaneous commands to all five server nodes using a loop.",
     objective: "Write a `for` loop that iterates 5 times using `range(5)`. Inside, print \"OVERLOAD\".",
     initialCode: `# Loop 5 times\n# Print "OVERLOAD"\n\n`,
     initialCodeEasy: `for i in range(_):\n    print("_______")`,

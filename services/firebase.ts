@@ -1,38 +1,117 @@
 
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
+import { getFirestore, doc, setDoc, getDoc, getDocFromServer, onSnapshot } from 'firebase/firestore';
 import { GameState, UserProfile } from '../types';
+import firebaseConfig from '../firebase-applet-config.json';
 
-// ------------------------------------------------------------------
-// CONFIGURATION
-// Replace the values below with your specific Firebase Project Config
-// ------------------------------------------------------------------
-const firebaseConfig = {
-  apiKey: "PLACEHOLDER_API_KEY", 
-  authDomain: "placeholder-project.firebaseapp.com",
-  projectId: "placeholder-project",
-  storageBucket: "placeholder-project.appspot.com",
-  messagingSenderId: "000000000000",
-  appId: "1:000000000000:web:0000000000000000000000"
+// Allow environment variables to override config for packaging flexibility
+const config = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || firebaseConfig.apiKey,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || firebaseConfig.authDomain,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || firebaseConfig.projectId,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || (firebaseConfig as any).storageBucket,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || (firebaseConfig as any).messagingSenderId,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || firebaseConfig.appId,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || (firebaseConfig as any).measurementId,
+  firestoreDatabaseId: import.meta.env.VITE_FIREBASE_DATABASE_ID || (firebaseConfig as any).firestoreDatabaseId
 };
 
-let auth: any = null;
-let db: any = null;
+export let auth: any = null;
+export let db: any = null;
 let googleProvider: any = null;
 let isConfigured = false;
 
 try {
-    // Basic check to see if config is still default
-    if (firebaseConfig.apiKey !== "PLACEHOLDER_API_KEY") {
-        const app = initializeApp(firebaseConfig);
-        auth = getAuth(app);
-        db = getFirestore(app);
-        googleProvider = new GoogleAuthProvider();
-        isConfigured = true;
-    }
+    const app = initializeApp(config);
+    auth = getAuth(app);
+    db = getFirestore(app, config.firestoreDatabaseId);
+    googleProvider = new GoogleAuthProvider();
+    isConfigured = true;
+    
+    // Test connection
+    const testConnection = async () => {
+      try {
+        await getDocFromServer(doc(db, 'test', 'connection'));
+      } catch (error) {
+        if(error instanceof Error && error.message.includes('the client is offline')) {
+          console.error("Please check your Firebase configuration. ");
+        }
+      }
+    };
+    testConnection();
 } catch (e) {
     console.warn("Firebase Initialization Failed:", e);
+}
+
+export const subscribeToAuthChanges = (callback: (user: UserProfile | null) => void) => {
+    if (!auth) {
+        callback(null);
+        return () => {};
+    }
+    return onAuthStateChanged(auth, (user: User | null) => {
+        if (user) {
+            callback({
+                id: user.uid,
+                name: user.displayName || 'Pilot',
+                email: user.email || 'unknown@void.net',
+                avatarUrl: user.photoURL || ''
+            });
+        } else {
+            callback(null);
+        }
+    });
+};
+
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId: string | undefined;
+    email: string | undefined;
+    emailVerified: boolean | undefined;
+    isAnonymous: boolean | undefined;
+    tenantId: string | undefined;
+    providerInfo: {
+      providerId: string;
+      displayName: string | null;
+      email: string | null;
+      photoUrl: string | null;
+    }[];
+  }
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth?.currentUser?.uid,
+      email: auth?.currentUser?.email,
+      emailVerified: auth?.currentUser?.emailVerified,
+      isAnonymous: auth?.currentUser?.isAnonymous,
+      tenantId: auth?.currentUser?.tenantId,
+      providerInfo: auth?.currentUser?.providerData.map((provider: any) => ({
+        providerId: provider.providerId,
+        displayName: provider.displayName,
+        email: provider.email,
+        photoUrl: provider.photoURL
+      })) || []
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
 }
 
 export const loginWithGoogle = async (): Promise<UserProfile> => {
@@ -62,6 +141,7 @@ export const logoutUser = async () => {
 export const saveGameState = async (user: UserProfile, state: Partial<GameState>) => {
     if (!db || !user.id) return false;
     
+    const path = `pilots/${user.id}`;
     try {
         // Strip out complex objects or circular dependencies if any (keeping it clean)
         const safeState = {
@@ -80,7 +160,7 @@ export const saveGameState = async (user: UserProfile, state: Partial<GameState>
         await setDoc(doc(db, "pilots", user.id), safeState, { merge: true });
         return true;
     } catch (e) {
-        console.error("Cloud Save Failed:", e);
+        handleFirestoreError(e, OperationType.WRITE, path);
         return false;
     }
 };
@@ -88,6 +168,7 @@ export const saveGameState = async (user: UserProfile, state: Partial<GameState>
 export const loadGameState = async (userId: string): Promise<Partial<GameState> | null> => {
     if (!db) return null;
     
+    const path = `pilots/${userId}`;
     try {
         const docRef = doc(db, "pilots", userId);
         const docSnap = await getDoc(docRef);
@@ -96,7 +177,25 @@ export const loadGameState = async (userId: string): Promise<Partial<GameState> 
             return docSnap.data() as Partial<GameState>;
         }
     } catch (e) {
-        console.error("Cloud Load Failed:", e);
+        handleFirestoreError(e, OperationType.GET, path);
     }
     return null;
 };
+
+export const subscribeToGameState = (userId: string, callback: (state: Partial<GameState>) => void) => {
+    if (!db) return () => {};
+    
+    const path = `pilots/${userId}`;
+    const docRef = doc(db, "pilots", userId);
+    
+    const unsubscribe = onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists()) {
+            callback(docSnap.data() as Partial<GameState>);
+        }
+    }, (error) => {
+        handleFirestoreError(error, OperationType.GET, path);
+    });
+    
+    return unsubscribe;
+};
+

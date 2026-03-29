@@ -1,0 +1,65 @@
+{
+  "entities": {
+    "PilotProgress": {
+      "title": "Pilot Progress",
+      "description": "Stores the game progress for a user.",
+      "type": "object",
+      "properties": {
+        "currentLevelId": {
+          "type": "number",
+          "description": "The ID of the level the user is currently playing."
+        },
+        "maxReachedLevel": {
+          "type": "number",
+          "description": "The highest level the user has reached."
+        },
+        "xp": {
+          "type": "number",
+          "description": "The user's experience points."
+        },
+        "skillLevel": {
+          "type": "string",
+          "description": "The user's selected difficulty level.",
+          "enum": ["beginner", "intermediate", "advanced"]
+        },
+        "code": {
+          "type": "string",
+          "description": "The user's current code in the editor."
+        },
+        "hintsUsed": {
+          "type": "number",
+          "description": "The number of hints the user has used."
+        },
+        "assessmentComplete": {
+          "type": "boolean",
+          "description": "Whether the user has completed the pre-assessment."
+        },
+        "tutorialPhase": {
+          "type": "string",
+          "description": "The user's current tutorial phase."
+        },
+        "unlockedAchievements": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "A list of achievement IDs the user has unlocked."
+        },
+        "lastUpdated": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp of the last update."
+        }
+      },
+      "required": ["currentLevelId", "maxReachedLevel", "xp", "skillLevel", "assessmentComplete"]
+    }
+  },
+  "firestore": {
+    "/pilots/{userId}": {
+      "schema": {
+        "$ref": "#/entities/PilotProgress"
+      },
+      "description": "Stores the game progress for each user, keyed by their Firebase Auth UID."
+    }
+  }
+}
